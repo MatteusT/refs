@@ -61,7 +61,7 @@ class PDFPageDetailedAggregator(PDFPageAggregator):
             return
         render(ltpage, self.page_number)
         self.page_number += 1
-#        self.rows = sorted(self.rows, key = lambda x: (x[0], -x[2]))
+        self.rows = sorted(self.rows, key = lambda x: (x[0], -x[2]))
         self.result = ltpage
 
 
