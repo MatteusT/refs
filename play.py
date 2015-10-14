@@ -16,18 +16,34 @@ from urllib2 import Request, urlopen
 from StringIO import StringIO
 import re
 from pdfminer.layout import LTPage, LTChar, LTAnno, LAParams, LTTextBox, LTTextLine
+import sqlite3
 
+
+def isName(name):
+    isName = 0
+    conn = sqlite3.connect('familynames.db')
+    cursor = conn.cursor()
+    cursor.execute("""SELECT * FROM names WHERE name=?""", (name,))
+    name = cursor.fetchall()
+    if name:
+        isName = 1
+    return isName
+    
 class PDFPageDetailedAggregator(PDFPageAggregator):
     def __init__(self, rsrcmgr, pageno=1, laparams=None):
         PDFPageAggregator.__init__(self, rsrcmgr, pageno=pageno, laparams=laparams)
         self.rows = []
         self.page_number = 0
+        self.ntot = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     def receive_layout(self, ltpage):        
         def render(item, page_number):
             if isinstance(item, LTPage) or isinstance(item, LTTextBox):
                 for child in item:
                     render(child, page_number)
             elif isinstance(item, LTTextLine):
+                child_str = item.get_text()
+                row = (page_number,  child_str) # bbox == (x1, y1, x2, y2)
+                self.rows.append(row)
                 child_str = ''
                 for child in item:
                     if isinstance(child, (LTChar, LTAnno)):
@@ -37,10 +53,11 @@ class PDFPageDetailedAggregator(PDFPageAggregator):
 #                    row = (page_number, item.bbox[0], item.bbox[1], item.bbox[2], item.bbox[3], child_str) # bbox == (x1, y1, x2, y2)                 
                     n19 = len([m.start() for m in re.finditer('19', child_str)])
                     n20 = len([m.start() for m in re.finditer('20', child_str)])
-                    row = (page_number,  child_str, [n19,n20]) # bbox == (x1, y1, x2, y2)
+                    self.ntot[page_number] += n19+n20
+                    row = (page_number,  child_str) # bbox == (x1, y1, x2, y2)
                     self.rows.append(row)
-#                for child in item:
-#                    render(child, page_number)
+                for child in item:
+                    render(child, page_number)
             return
         render(ltpage, self.page_number)
         self.page_number += 1
