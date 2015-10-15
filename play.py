@@ -34,7 +34,9 @@ class PDFPageDetailedAggregator(PDFPageAggregator):
         PDFPageAggregator.__init__(self, rsrcmgr, pageno=pageno, laparams=laparams)
         self.rows = []
         self.page_number = 0
-        self.ntot = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        self.ntot = []
+        self.allnNames = []
+        self.coords = []
     def receive_layout(self, ltpage):        
         def render(item, page_number):
             if isinstance(item, LTPage) or isinstance(item, LTTextBox):
@@ -42,28 +44,33 @@ class PDFPageDetailedAggregator(PDFPageAggregator):
                     render(child, page_number)
             elif isinstance(item, LTTextLine):
                 child_str = item.get_text()
-                row = (page_number,  child_str) # bbox == (x1, y1, x2, y2)
-                self.rows.append(row)
+#                row = (page_number,  child_str) # bbox == (x1, y1, x2, y2)
+#                self.rows.append(row)
                 child_str = ''
+                nNames = 0
                 for child in item:
                     if isinstance(child, (LTChar, LTAnno)):
-                        child_str += child.get_text()
+                        text = child.get_text()
+                        child_str += text
+                        nNames += isName(text)
                 child_str = ' '.join(child_str.split()).strip()
                 if child_str:
-#                    row = (page_number, item.bbox[0], item.bbox[1], item.bbox[2], item.bbox[3], child_str) # bbox == (x1, y1, x2, y2)                 
+                    coord = ( item.bbox[0], item.bbox[1], item.bbox[2], item.bbox[3]) # bbox == (x1, y1, x2, y2)                 
                     n19 = len([m.start() for m in re.finditer('19', child_str)])
                     n20 = len([m.start() for m in re.finditer('20', child_str)])
-                    self.ntot[page_number] += n19+n20
-                    row = (page_number,  child_str) # bbox == (x1, y1, x2, y2)
+                    self.ntot.append(n19+n20)
+                    row = (page_number,  child_str, nNames) # bbox == (x1, y1, x2,y2)
+#                    print row
+                    self.coords.append(coord)
                     self.rows.append(row)
+                    self.allnNames.append(nNames)
                 for child in item:
                     render(child, page_number)
             return
         render(ltpage, self.page_number)
         self.page_number += 1
-        self.rows = sorted(self.rows, key = lambda x: (x[0], -x[2]))
+#        self.rows = sorted(self.rows, key = lambda x: (x[0], -x[2]))
         self.result = ltpage
-
 
 
 
