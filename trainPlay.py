@@ -152,11 +152,13 @@ def refsecSearch(pdf_path):
             for clusts in self.clust:
                 for itr in range(clusts[0],clusts[1]):
                     self.rows[itr]
-                    
+    
+    if pdf_path.find('http://arxiv.org') != -1:
     ##urlpdf = 'http://arxiv.org/pdf/1501.02262v1.pdf'
-    ##remoteFile = urlopen(Request(urlpdf)).read()
-    ##memoryFile = StringIO(remoteFile)
-    memoryFile = io.open(pdf_path, mode='rb')
+        remoteFile = urlopen(Request(pdf_path)).read()
+        memoryFile = StringIO(remoteFile)
+    else:
+        memoryFile = io.open(pdf_path, mode='rb')
     parser = PDFParser(memoryFile)
     doc = PDFDocument(parser)
 
